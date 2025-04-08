@@ -7,7 +7,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p "$RECYCLE_BIN"
 
 
-IF [ "$#" -eq 0 ]; then
+if [ "$#" -eq 0 ]; then
     echo "Usage: $0 <file_or_directory> [more_files_or_directories...]"
     exit 1
 fi
