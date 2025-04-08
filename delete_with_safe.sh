@@ -3,57 +3,47 @@
 RECYCLE_BIN="/tmp/recycle_bin"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Create the recycle bin directory if it doesn't exist
 mkdir -p "$RECYCLE_BIN"
 
-
 if [ "$#" -eq 0 ]; then
-    echo "Usage: $0 <file_or_directory> [more_files_or_directories...]"
-    exit 1
+  echo "Usage: $0 <file_or_directory> [more files...]"
+  exit 1
 fi
 
 for TARGET in "$@"; do
-    if [ ! -e "$TARGET" ]; then
-        echo "Error: $TARGET does not exist."
-        continue
-    fi
+  if [ ! -e "$TARGET" ]; then
+    echo "Error: '$TARGET' not found"
+    continue
+  fi
 
-    ABS_PATH=$(realpath "$TARGET")
-    BASENAME=$(basename "$ABS_PATH")
-    NEW_ID="${BASENAME}_${TIMESTAMP}_$(uuidgen)"
+  ABS_PATH=$(realpath "$TARGET")
+  BASENAME=$(basename "$TARGET")
+  NEW_ID="${BASENAME}_${TIMESTAMP}_$RANDOM"
 
-    DEST="$RECYCLE_BIN/$NEW_ID"
-    METADATA_FILE="$RECYCLE_BIN/$NEW_ID.info"
+  DEST="$RECYCLE_BIN/$NEW_ID"
+  METADATA="$RECYCLE_BIN/$NEW_ID.info"
 
-    # Check ownership and permissions
-    FILE_OWNER=$(stat -c '%U' "$TARGET")
-    FILE_GROUP=$(stat -c '%G' "$TARGET")
-    FILE_PERMISSIONS=$(stat -c '%a' "$TARGET")
-    FILE_SIZE=$(stat -c '%s' "$TARGET")
+  FILE_OWNER=$(stat -c '%U' "$TARGET")
+  FILE_GROUP=$(stat -c '%G' "$TARGET")
+  PERMISSIONS=$(stat -c '%a' "$TARGET")
 
-    if [ -d "$TARGET"]; then
-        # Use rsync for directories to preserve permissions and structure
-        rsync -a --remove-source-files "$TARGET/" "$DEST/"
-        # Create metadata file with original location and other info
-        echo "Original path: $ABS_PATH" > "$METADATA_FILE"
-        echo "Deleted on: $TIMESTAMP" >> "$METADATA_FILE"
-        echo "Owner: $FILE_OWNER" >> "$METADATA_FILE"
-        echo "Group: $FILE_GROUP" >> "$METADATA_FILE"
-        echo "Permissions: $FILE_PERMISSIONS" >> "$METADATA_FILE"
-        echo "Size: $FILE_SIZE bytes" >> "$METADATA_FILE"
-        echo "Directory moved to recycle bin: $DEST"
-    else
-        # Move the file to the recycle bin
-        mv "$TARGET" "$DEST"
-        # Create metadata file with original location and other info
-        echo "Original path: $ABS_PATH" > "$METADATA_FILE"
-        echo "Deleted on: $TIMESTAMP" >> "$METADATA_FILE"
-        echo "Owner: $FILE_OWNER" >> "$METADATA_FILE"
-        echo "Group: $FILE_GROUP" >> "$METADATA_FILE"
-        echo "Permissions: $FILE_PERMISSIONS" >> "$METADATA_FILE"
-        echo "Size: $FILE_SIZE bytes" >> "$METADATA_FILE"
-        echo "File moved to recycle bin: $DEST"
-    fi
+  if [ -d "$TARGET" ]; then
+    # ถ้าเป็น directory ให้สร้าง directory ใหม่ใน recycle bin
+    mkdir -p "$DEST"
+    rsync -a "$TARGET/" "$DEST/"
+    rm -rf "$TARGET"
+  else
+    mv "$TARGET" "$DEST"
+  fi
 
+  # สร้าง metadata เก็บข้อมูลที่จำเป็น
+  echo "original_path=\"$ABS_PATH\"" > "$METADATA"
+  echo "deleted_at=\"$TIMESTAMP\"" >> "$METADATA"
+  echo "owner=\"$FILE_OWNER\"" >> "$METADATA"
+  echo "group=\"$FILE_GROUP\"" >> "$METADATA"
+  echo "permissions=\"$PERMISSIONS\"" >> "$METADATA"
+  echo "is_directory=\"$(if [ -d "$DEST" ]; then echo "yes"; else echo "no"; fi)\"" >> "$METADATA"
+
+  echo "Moved '$TARGET' to '$DEST'"
+  echo "Metadata saved: $METADATA"
 done
-
