@@ -27,9 +27,9 @@ jobs:
                 
                 # Run delete script
                 ./delete_with_safe.sh /tmp/test_folder/test_file.txt
-                
-                # Check if file was moved to recycle bin
-                if [ -f /tmp/recycle_bin/test_file.txt ]; then
+               
+                # Check if file was moved to recycle bin with timestamp pattern
+                if ls /tmp/recycle_bin/test_file.txt_[0-9]*_[0-9]* > /dev/null 2>&1; then
                     echo 'File successfully moved to recycle bin'
                 else
                     echo 'File not found in recycle bin'
