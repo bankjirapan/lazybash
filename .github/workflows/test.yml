@@ -1,0 +1,37 @@
+name: Test Bash Script
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Make script executable
+              run: chmod +x delete_with_safe.sh
+
+            - name: Run tests
+              run: |
+                # Create test files and folders
+                mkdir -p /tmp/test_folder
+                echo 'test content' > /tmp/test_folder/test_file.txt
+                
+                # Run delete script
+                ./delete_with_safe.sh /tmp/test_folder/test_file.txt
+                
+                # Check if file was moved to recycle bin
+                if [ -f /tmp/recycle_bin/test_file.txt ]; then
+                    echo 'File successfully moved to recycle bin'
+                else
+                    echo 'File not found in recycle bin'
+                    exit 1
+                fi
